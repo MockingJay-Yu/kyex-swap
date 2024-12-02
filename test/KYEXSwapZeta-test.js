@@ -4,6 +4,7 @@ const { deployKyexSwap } = require("../script/deploy.js");
 const {
   loadFixture,
 } = require("@nomicfoundation/hardhat-toolbox/network-helpers");
+const { AbiCoder } = require("ethers");
 
 ///////////////////
 // Test swap
@@ -42,11 +43,6 @@ describe("Test Swap", function () {
       "0xd97B1de3619ed2c6BEb3860147E30cA8A7dC9891",
       "0x5F0b1a82749cb4E2278EC87F8BF6B618dC71a8bf",
     ];
-    const returnData = await uniswap.getAmountsOut(
-      ethers.parseUnits("1", 18),
-      path
-    );
-    console.log(returnData);
     const amountIn = ethers.parseUnits("1", 18);
     const bnb = await ethers.getContractAt(
       "IZRC20",
