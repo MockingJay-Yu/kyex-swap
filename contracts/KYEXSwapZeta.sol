@@ -15,6 +15,7 @@ import "libraries/TransferHelper.sol";
 import "libraries/error/Errors.sol";
 import "libraries/event/Events.sol";
 import "libraries/BytesLib.sol";
+import "hardhat/console.sol";
 
 /*
 ██╗░░██╗██╗░░░██╗███████╗██╗░░██╗
@@ -483,10 +484,15 @@ contract KYEXSwapZeta is
                 address(this),
                 amountIn
             );
+            console.log("amountIn", amountIn);
+            console.log("tokenIn", tokenIn);
             address[] memory path;
             path[0] = tokenIn;
             path[1] = nativeToken;
-            uint256[] memory amount = IUniswapV2Router02(uniswapRouter)
+            console.log("path", path[0]);
+            console.log("path", path[1]);
+
+            uint[] memory amount = IUniswapV2Router02(uniswapRouter)
                 .getAmountsOut(amountIn, path);
 
             volume += amount[1];

@@ -39,17 +39,12 @@ module.exports = {
         { privateKey: user1, balance: "1000000000000000000000" },
       ],
     },
-    fork_zeta_test: {
-      forking: {
-        url: "https://zetachain-athens.g.allthatnode.com/archive/evm/e6f4078993be427386b109445e004b31",
-      },
-      accounts: [
-        { privateKey: deployer, balance: "1000000000000000000000" }, // 1000 ETH
-        { privateKey: user1, balance: "1000000000000000000000" },
-      ],
-    },
     zeta_test: {
       url: "https://zetachain-athens.g.allthatnode.com/archive/evm/e6f4078993be427386b109445e004b31",
+      accounts: [deployer],
+    },
+    sepolia: {
+      url: "https://ethereum-sepolia.g.allthatnode.com/full/evm/e6f4078993be427386b109445e004b31",
       accounts: [deployer],
     },
   },

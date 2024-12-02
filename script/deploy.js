@@ -20,7 +20,7 @@ async function deployKyexSwap() {
     await tx.wait(1);
     await KYEXSwapEVM.updateConfig(deployer.address, 600, 0, 0);
     console.log(await KYEXSwapEVM.getAddress());
-  } else if (network.name == "fork_zeta_test") {
+  } else if (network.name == "hardhat") {
     const KYEXSwapZetaFactory = await ethers.getContractFactory("KYEXSwapZeta");
     const KYEXSwapZeta = await KYEXSwapZetaFactory.deploy();
     await KYEXSwapZeta.waitForDeployment();

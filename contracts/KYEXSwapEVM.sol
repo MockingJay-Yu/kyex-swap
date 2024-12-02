@@ -70,15 +70,15 @@ contract KYEXSwapEVM is
     ///////////////////
     //TODO: Change it before deployment
     address private constant uniswapRouter =
-        0xE592427A0AEce92De3Edee1F18E0157C05861564;
+        0x3bFA4769FB09eefC5a80d6E87c3B9C650f7Ae48E;
     address private constant uniswapQuoter =
-        0x61fFE014bA17989E743c5F6cB21bF9697530B21e;
+        0xEd1f6473345F45b75F8179591dd5bA1888cf2FB3;
     address private constant gateWay =
         0x0c487a766110c85d301D96E33579C5B317Fa4995;
     address private constant universalContract =
         0x788AD4031F225EFa7F68c5B2738e4e47d432F221;
     address private constant nativeToken =
-        0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+        0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9;
 
     address public kyexTreasury;
     uint32 public maxDeadLine;
