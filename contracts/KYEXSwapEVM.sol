@@ -15,7 +15,6 @@ import "libraries/event/Events.sol";
 import "libraries/IWETH.sol";
 import "libraries/zetaV2/contracts/evm/interfaces/IGatewayEVM.sol";
 import "libraries/BytesLib.sol";
-import "hardhat/console.sol";
 
 /*
 ██╗░░██╗██╗░░░██╗███████╗██╗░░██╗
@@ -30,7 +29,8 @@ import "hardhat/console.sol";
 ██║░░╚═╝██████╔╝██║░░██║╚█████╗░╚█████╗░█████╗██║░░╚═╝███████║███████║██║██╔██╗██║
 ██║░░██╗██╔══██╗██║░░██║░╚═══██╗░╚═══██╗╚════╝██║░░██╗██╔══██║██╔══██║██║██║╚████║
 ╚█████╔╝██║░░██║╚█████╔╝██████╔╝██████╔╝░░░░░░╚█████╔╝██║░░██║██║░░██║██║██║░╚███║
-░╚════╝░╚═╝░░╚═╝░╚════╝░╚═════╝░╚═════╝░░░░░░░░╚════╝░╚═╝░░╚═╝╚═╝░░╚═╝╚═╝╚═╝░░╚══╝
+░╚════╝░╚═╝░░╚═╝░╚════╝░╚═════╝░╚═════╝░░░░░░░░╚════╝░╚═╝░░╚═╝╚═╝░░╚═╝╚═╝╚═╝░░╚══╝、
+
 
 ░██████╗░██╗░░░░░░░██╗░█████╗░██████╗░
 ██╔════╝░██║░░██╗░░██║██╔══██╗██╔══██╗
@@ -45,6 +45,7 @@ import "hardhat/console.sol";
  * @author KYEX-TEAM
  * @dev KYEX Mainnet ZETACHAIN Smart Contract V1
  */
+
 contract KYEXSwapEVM is
     UUPSUpgradeable,
     OwnableUpgradeable,
@@ -58,11 +59,12 @@ contract KYEXSwapEVM is
         bytes sourceChainSwapPath;
         address[] zetaChainSwapPath;
         bytes targetChainSwapPath;
+        uint256 targetChainPoolNum;
         address[] gasZRC20SwapPath;
-        address recipient;
-        uint256 gasFee;
+        bytes recipient;
+        bytes sender;
         bytes omnichainSwapContract;
-        uint256 chainId;
+        uint256 minAmountOut;
     }
 
     ///////////////////
@@ -70,15 +72,13 @@ contract KYEXSwapEVM is
     ///////////////////
     //TODO: Change it before deployment
     address private constant uniswapRouter =
-        0x3bFA4769FB09eefC5a80d6E87c3B9C650f7Ae48E;
-    address private constant uniswapQuoter =
-        0xEd1f6473345F45b75F8179591dd5bA1888cf2FB3;
+        0xE592427A0AEce92De3Edee1F18E0157C05861564;
     address private constant gateWay =
-        0x0c487a766110c85d301D96E33579C5B317Fa4995;
+        0x48B9AACC350b20147001f88821d31731Ba4C30ed;
     address private constant universalContract =
-        0x788AD4031F225EFa7F68c5B2738e4e47d432F221;
+        0x287E1882A69c709eD72674E445f9D7fdE6bdb0fF;
     address private constant nativeToken =
-        0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9;
+        0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270;
 
     address public kyexTreasury;
     uint32 public maxDeadLine;
@@ -160,106 +160,82 @@ contract KYEXSwapEVM is
 
     function swap(
         uint256 amountIn,
+        uint256 nativeTokenVolume,
         SwapDetail calldata swapDetail
     ) external payable whenNotPaused nonReentrant {
         (uint256 poolNum, address tokenIn, address tokenOut) = decodeSwapPath(
             swapDetail.sourceChainSwapPath
         );
         uint256 zetaPathLength = swapDetail.zetaChainSwapPath.length;
-        console.log("amountIn:", amountIn);
-        console.log("tokenIn:", tokenIn);
-        console.log("poolNum:", poolNum);
-        console.log("tokenOut:", tokenOut);
-        console.log("chainId:", block.chainid);
 
-        receiveToken(amountIn, tokenIn);
+        receiveToken(amountIn, tokenIn, nativeTokenVolume);
 
-        address recipient = swapDetail.recipient;
+        address recipient = BytesLib.toAddress(swapDetail.recipient, 0);
         uint256 amountOut;
         if (poolNum > 0) {
-            console.log("router:", uniswapRouter);
+            TransferHelper.safeApprove(tokenIn, uniswapRouter, amountIn);
             amountOut = ISwapRouter(uniswapRouter).exactInput(
                 ISwapRouter.ExactInputParams(
-                    abi.encode(swapDetail.sourceChainSwapPath),
+                    swapDetail.sourceChainSwapPath,
                     address(this),
                     block.timestamp + maxDeadLine,
                     amountIn,
                     0
                 )
             );
-            console.log("jiajso:", uniswapRouter);
         } else {
             amountOut = amountIn;
         }
-
         if (zetaPathLength == 0) {
-            sendPlatformFee(amountOut, tokenOut, false);
+            amountOut = sendPlatformFee(amountOut, tokenOut, false);
+            if (amountOut < swapDetail.minAmountOut)
+                revert Errors.SlippageToleranceExceedsMaximum();
             if (tokenOut == nativeToken) {
                 IWETH(nativeToken).withdraw(amountOut);
                 TransferHelper.transferNativeToken(recipient, amountOut);
             } else {
                 TransferHelper.safeTransfer(tokenOut, recipient, amountOut);
             }
-        } else if (
-            swapDetail.targetChainSwapPath.length == 0 && zetaPathLength == 1
-        ) {
-            sendPlatformFee(amountOut, tokenOut, true);
-
-            tokenOut == nativeToken
-                ? IGatewayEVM(gateWay).deposit(
-                    recipient,
-                    RevertOptions(
-                        address(0),
-                        false,
-                        address(0),
-                        new bytes(0),
-                        0
-                    )
-                )
-                : IGatewayEVM(gateWay).deposit(
-                    recipient,
-                    amountOut,
-                    tokenOut,
-                    RevertOptions(
-                        address(0),
-                        false,
-                        address(0),
-                        new bytes(0),
-                        0
-                    )
-                );
         } else {
-            sendPlatformFee(amountOut, tokenOut, true);
-
+            bool isDeposit = swapDetail.targetChainSwapPath.length == 0 &&
+                zetaPathLength == 1;
+            if (isDeposit) {
+                amountOut = sendPlatformFee(amountOut, tokenOut, true);
+            }
             tokenOut == nativeToken
-                ? IGatewayEVM(gateWay).depositAndCall(
-                    universalContract,
-                    abi.encode(swapDetail),
-                    RevertOptions(
-                        address(0),
-                        false,
-                        address(0),
-                        new bytes(0),
-                        0
+                ? IWETH(nativeToken).withdraw(amountOut)
+                : TransferHelper.safeApprove(tokenOut, gateWay, amountOut);
+            if (isDeposit) {
+                if (amountOut < swapDetail.minAmountOut)
+                    revert Errors.SlippageToleranceExceedsMaximum();
+                tokenOut == nativeToken
+                    ? IGatewayEVM(gateWay).deposit{value: amountOut}(
+                        recipient,
+                        RevertOptions(msg.sender, false, msg.sender, "", 21000)
                     )
-                )
-                : IGatewayEVM(gateWay).depositAndCall(
-                    universalContract,
-                    amountOut,
-                    tokenOut,
-                    abi.encode(swapDetail),
-                    RevertOptions(
-                        address(0),
-                        false,
-                        address(0),
-                        new bytes(0),
-                        0
+                    : IGatewayEVM(gateWay).deposit(
+                        recipient,
+                        RevertOptions(msg.sender, false, msg.sender, "", 21000)
+                    );
+            } else {
+                tokenOut == nativeToken
+                    ? IGatewayEVM(gateWay).depositAndCall{value: amountOut}(
+                        universalContract,
+                        abi.encode(swapDetail),
+                        RevertOptions(msg.sender, false, msg.sender, "", 21000)
                     )
-                );
+                    : IGatewayEVM(gateWay).depositAndCall(
+                        universalContract,
+                        amountOut,
+                        tokenOut,
+                        abi.encode(swapDetail),
+                        RevertOptions(msg.sender, false, msg.sender, "", 21000)
+                    );
+            }
         }
         emit Events.SwapExecuted(
             msg.sender,
-            recipient,
+            swapDetail.recipient,
             tokenIn,
             tokenOut,
             amountIn,
@@ -269,10 +245,21 @@ contract KYEXSwapEVM is
 
     function onReceive(
         bytes calldata targetChainSwapPath,
-        address recipient,
-        uint256 amountIn
+        bytes calldata recipient,
+        uint256 amountIn,
+        uint256 minAmountOut
     ) external payable whenNotPaused nonReentrant {
-        (, , address tokenOut) = decodeSwapPath(targetChainSwapPath);
+        (, address tokenIn, address tokenOut) = decodeSwapPath(
+            targetChainSwapPath
+        );
+        if (tokenIn == nativeToken) {
+            if (msg.value != amountIn) revert Errors.IncorrectAmountSent();
+            IWETH(nativeToken).deposit{value: amountIn}();
+        } else {
+            if (IERC20(tokenIn).balanceOf(address(this)) < amountIn)
+                revert Errors.IncorrectAmountSent();
+        }
+        TransferHelper.safeApprove(tokenIn, uniswapRouter, amountIn);
         uint256 amountOut = ISwapRouter(uniswapRouter).exactInput(
             ISwapRouter.ExactInputParams(
                 targetChainSwapPath,
@@ -282,12 +269,21 @@ contract KYEXSwapEVM is
                 0
             )
         );
-
+        amountOut = sendPlatformFee(amountOut, tokenOut, true);
+        if (amountOut < minAmountOut)
+            revert Errors.SlippageToleranceExceedsMaximum();
         if (tokenOut == nativeToken) {
             IWETH(nativeToken).withdraw(amountOut);
-            TransferHelper.transferNativeToken(recipient, amountOut);
+            TransferHelper.transferNativeToken(
+                BytesLib.toAddress(recipient, 0),
+                amountOut
+            );
         } else {
-            TransferHelper.safeTransfer(tokenOut, recipient, amountOut);
+            TransferHelper.safeTransfer(
+                tokenOut,
+                BytesLib.toAddress(recipient, 0),
+                amountOut
+            );
         }
     }
 
@@ -299,13 +295,17 @@ contract KYEXSwapEVM is
     /**
      * @dev Receive the user's tokens and calculate volume
      */
-    function receiveToken(uint256 amountIn, address tokenIn) private {
+    function receiveToken(
+        uint256 amountIn,
+        address tokenIn,
+        uint256 nativeTokenVolume
+    ) private {
         if (amountIn == 0) revert Errors.NeedsMoreThanZero();
 
         if (tokenIn == nativeToken) {
             if (msg.value != amountIn) revert Errors.IncorrectAmountSent();
             IWETH(nativeToken).deposit{value: amountIn}();
-            volume += amountIn;
+            volume += nativeTokenVolume;
         } else {
             if (IERC20(tokenIn).allowance(msg.sender, address(this)) < amountIn)
                 revert Errors.InsufficientAllowance();
@@ -316,16 +316,14 @@ contract KYEXSwapEVM is
                 address(this),
                 amountIn
             );
-            address[] memory path;
-            path[0] = tokenIn;
-            path[1] = nativeToken;
-            uint256 amountOut = IQuoter(uniswapQuoter).quoteExactInput(
-                abi.encode(path),
-                amountIn
-            );
-            volume += amountOut;
+            volume += nativeTokenVolume;
         }
-        emit Events.ReceivedToken(msg.sender, tokenIn, amountIn);
+        emit Events.ReceivedToken(
+            msg.sender,
+            tokenIn,
+            amountIn,
+            nativeTokenVolume
+        );
     }
 
     /**
@@ -339,8 +337,8 @@ contract KYEXSwapEVM is
         if (amount == 0) revert Errors.TransferFailed();
         uint256 feeAmount;
         isCrossChain == true
-            ? feeAmount = (amount * crossChainPlatformFee) / 1000
-            : feeAmount = (amount * sourceChainPlatformFee) / 1000;
+            ? feeAmount = (amount * crossChainPlatformFee) / 10000
+            : feeAmount = (amount * sourceChainPlatformFee) / 10000;
         newAmount = amount - feeAmount;
 
         if (feeAmount > 0) {

@@ -5,7 +5,7 @@ pragma solidity ^0.8.20;
 library Events {
     event SwapExecuted(
         address indexed sender,
-        address indexed recipient,
+        bytes indexed recipient,
         address tokenIn,
         address tokenOut,
         uint256 amountIn,
@@ -21,7 +21,8 @@ library Events {
     event ReceivedToken(
         address indexed sender,
         address indexed token,
-        uint256 amount
+        uint256 amount,
+        uint256 nativeTokenVolume
     );
     event TokenTransfer(
         bool isCrossChain,

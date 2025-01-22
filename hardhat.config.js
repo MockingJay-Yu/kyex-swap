@@ -3,11 +3,6 @@ require("dotenv").config();
 
 /** @type import('hardhat/config').HardhatUserConfig */
 
-const user1 =
-  "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
-const deployer =
-  "0x19f669c8276dd9e37a18ea90b97896a02e69e8d063d96a2ef978115f5691c9ba";
-
 module.exports = {
   solidity: {
     compilers: [
@@ -30,15 +25,6 @@ module.exports = {
   },
 
   networks: {
-    hardhat: {
-      forking: {
-        url: "https://zetachain-athens.g.allthatnode.com/archive/evm/e6f4078993be427386b109445e004b31",
-      },
-      accounts: [
-        { privateKey: deployer, balance: "1000000000000000000000" }, // 1000 ETH
-        { privateKey: user1, balance: "1000000000000000000000" },
-      ],
-    },
     zeta_test: {
       url: "https://zetachain-athens.g.allthatnode.com/archive/evm/e6f4078993be427386b109445e004b31",
       accounts: [deployer],
@@ -46,6 +32,35 @@ module.exports = {
     sepolia: {
       url: "https://ethereum-sepolia.g.allthatnode.com/full/evm/e6f4078993be427386b109445e004b31",
       accounts: [deployer],
+    },
+    zeta: {
+      url: "https://zetachain-mainnet.g.allthatnode.com/full/evm/e6f4078993be427386b109445e004b31",
+      accounts: [deployer],
+    },
+    bsc: {
+      url: "https://bsc-mainnet.g.allthatnode.com/full/evm/e6f4078993be427386b109445e004b31",
+      accounts: [deployer],
+    },
+    bsc_test: {
+      url: "https://bsc-testnet.g.allthatnode.com/full/evm/e6f4078993be427386b109445e004b31",
+      accounts: [deployer],
+    },
+    base: {
+      url: "https://base-mainnet.g.allthatnode.com/full/evm/e6f4078993be427386b109445e004b31",
+      accounts: [deployer],
+    },
+    eth: {
+      url: "https://eth-mainnet.nodereal.io/v1/1659dfb40aa24bbb8153a677b98064d7",
+      accounts: [deployer],
+    },
+    polygon: {
+      url: "https://rpc.ankr.com/polygon",
+      accounts: [deployer],
+    },
+  },
+  etherscan: {
+    apiKey: {
+      bsc: "BG8P7926NRRPDQ8ZZ47RNTGZRMHZ76TW3A", // 将你的 API 密钥放在这里
     },
   },
 };

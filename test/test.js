@@ -1,43 +1,47 @@
 const { ethers } = require("hardhat");
-const { AbiCoder } = ethers;
-const abiCoder = new AbiCoder();
 
 async function test() {
-  const [deployer] = await ethers.getSigners();
-
-  const KYEXSwapEVM = await ethers.getContractAt(
-    "KYEXSwapEVM",
-    "0xC3fE5e9d6A73945cA31bf8B3573B3076a36bFfE2"
+  const uniswap = await ethers.getContractAt(
+    "IUniswapV2Router02",
+    "0x2ca7d64A7EFE2D62A725E2B35Cf7230D6677FfEe"
   );
-  console.log(await KYEXSwapEVM.getAddress());
-  const amountIn = ethers.parseUnits("0.1", 18);
-  const swapDetail = {
-    sourceChainSwapPath: abiCoder.encode(
-      ["address"],
-      ["0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9"]
-    ),
-    zetaChainSwapPath: [
-      "0xd97B1de3619ed2c6BEb3860147E30cA8A7dC9891", //bnb
-      "0x5F0b1a82749cb4E2278EC87F8BF6B618dC71a8bf", //zeta
-      "0xcC683A782f4B30c138787CB5576a86AF66fdc31d", //usdc
+  const zrc20 = await ethers.getContractAt(
+    "IZRC20",
+    "0xd97B1de3619ed2c6BEb3860147E30cA8A7dC9891"
+  );
+  // const gasLimit = await zrc20.GAS_LIMIT();
+  // const fee = await zrc20.withdrawGasFeeWithGasLimit(gasLimit);
+  // const fee = await zrc20.withdrawGasFee();
+  // console.log(fee);
+  await zrc20.approve(
+    "0xd97B1de3619ed2c6BEb3860147E30cA8A7dC9891",
+    ethers.parseUnits("79", 13)
+  );
+  const amount = await uniswap.swapExactTokensForTokens(
+    ethers.parseUnits("79", 13),
+    0,
+    [
+      "0xd97B1de3619ed2c6BEb3860147E30cA8A7dC9891",
+      "0x5F0b1a82749cb4E2278EC87F8BF6B618dC71a8bf",
+      "0x65a45c57636f9BcCeD4fe193A602008578BcA90b",
     ],
-    targetChainSwapPath: abiCoder.encode(
-      ["address"],
-      ["0xcC683A782f4B30c138787CB5576a86AF66fdc31d"] //usdc
-    ),
-    gasZRC20SwapPath: [
-      "0xcC683A782f4B30c138787CB5576a86AF66fdc31d", //usdc
-      "0x5F0b1a82749cb4E2278EC87F8BF6B618dC71a8bf", //zeta
-      "0x05BA149A7bd6dC1F937fA9046A9e05C05f3b18b0", //eth
-    ],
-    gasFee: ethers.parseUnits("0.1", 18),
-    recipient: deployer.address,
-    omnichainSwapContract: "0x",
-    chainId: 0,
-  };
-  console.log(swapDetail);
-  const tx = await KYEXSwapEVM.swap(amountIn, swapDetail, { value: amountIn });
-  console.log(tx);
+    "0x670f4f034B5e9B01580F888741d129866bBB2cC3",
+    Math.floor(Date.now() / 1000) + 60 * 10
+  );
+  console.log(amount);
+
+  // console.log(amount1);
+
+  // console.log(amount[0]);
+  // console.log(amount[1]);
+  // console.log(amount[2]);
+  // const [deployer] = await ethers.getSigners();
+
+  //   const sas = await ethers.getContractAt(
+  //     "KYEXSwapEVM",
+  //     "0xC73CEAeF7F31e3b67f5F371AC1AF821Bd15e4EfF"
+  //   );
+  //   await sas.updateConfig(deployer.address, 600, 0, 0);
 }
 
 module.exports = { test };

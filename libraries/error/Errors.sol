@@ -10,7 +10,7 @@ library Errors {
     error InsufficientGasForWithdraw();
     error NeedsMoreThanZero();
     error OnlyGateWay();
-    error OnlySupportZETA();
+    error ZETANotSupported();
     error InsufficientAllowance();
     error SlippageToleranceExceedsMaximum();
     error PlatformFeeNeedslessThanOneHundredPercent();
