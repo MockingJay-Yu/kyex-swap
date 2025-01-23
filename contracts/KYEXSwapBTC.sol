@@ -156,10 +156,8 @@ contract KYEXSwapBTC is
         uint256 amountIn,
         bytes calldata message
     ) external override onlySystemContract whenNotPaused {
-        address targetToken = BytesLib.toAddress(message, 0);
-        bytes memory recipient = abi.encodePacked(
-            BytesLib.toAddress(message, 20)
-        );
+        address targetToken = bytesToAddress(message, 0);
+        bytes memory recipient = abi.encodePacked(bytesToAddress(message, 20));
         swapExecute(amountIn, targetToken, recipient);
     }
 
@@ -288,16 +286,14 @@ contract KYEXSwapBTC is
         }
     }
 
-    function decodeSwapPath(
-        bytes memory path
-    )
-        private
-        pure
-        returns (uint256 poolNum, address tokenIn, address tokenOut)
-    {
-        poolNum = ((path.length - 20) / 23);
-        tokenIn = BytesLib.toAddress(path, 0);
-        tokenOut = BytesLib.toAddress(path, poolNum * 23);
+    function bytesToAddress(
+        bytes calldata data,
+        uint256 offset
+    ) internal pure returns (address output) {
+        bytes memory b = data[offset:offset + 20];
+        assembly {
+            output := mload(add(b, 20))
+        }
     }
 
     ///////////////////
