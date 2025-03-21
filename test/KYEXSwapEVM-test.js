@@ -1,16 +1,42 @@
 const { ethers } = require("hardhat");
 const { expect } = require("chai");
 const { deployKyexSwap } = require("../script/deploy.js");
+const { createUniswapV2Pair } = require("./libraries/createUniswapV2Pair.js");
+const {
+  getImpersonateAccount,
+} = require("./liarbries/getImpersonateAccount.js");
+
 const {
   loadFixture,
 } = require("@nomicfoundation/hardhat-toolbox/network-helpers");
+const [deployer, user] = await ethers.getSigners();
 
 ///////////////////
 // Test swap
 ///////////////////
-describe("Test Swap", function () {
+describe("Test onCall", function () {
   it("zetaPathLength == 0", async function () {
-    const { KYEXSwapEVM, deployer } = await loadFixture(deployKyexSwap);
+    const {
+      MockWZETA,
+      MockUniswapV2Router,
+      MockUniswapV2Factory,
+      MockGatewayZEVM,
+      KYEXSwapZetaTestProxy,
+    } = await loadFixture(deployKyexSwap);
+
+    const MockZRC20Factory = await ethers.getContractFactory("MockZRC20");
+    const MockZRC20USDC = await MockZRC20Factory.deploy(500, "USDC", "USDC");
+    const MockZRC20ETH = await MockZRC20Factory.deploy(400, "ETH", "ETH");
+    createUniswapV2Pair(
+      deployer,
+      MockUniswapV2Router,
+      MockUniswapV2Factory,
+      MockZRC20USDC,
+      MockZRC20ETH
+    );
+    const protocolAddr = await MockGatewayZEVM.PROTOCOL_ADDRESS();
+    const protocolAccount = await getImpersonateAccount(protocolAddr);
+
     const swapDetail = {
       sourceChainSwapPath: ethers.solidityPacked(
         ["address", "uint24", "address"],

@@ -4,8 +4,8 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import "@uniswap/v3-periphery/contracts/interfaces/IQuoter.sol";
@@ -59,11 +59,11 @@ contract KYEXSwapEVM is
         bytes sourceChainSwapPath;
         address[] zetaChainSwapPath;
         bytes targetChainSwapPath;
-        uint256 targetChainPoolNum;
         address[] gasZRC20SwapPath;
         bytes recipient;
         bytes sender;
         bytes omnichainSwapContract;
+        uint256 chainId;
         uint256 minAmountOut;
     }
 
@@ -72,13 +72,13 @@ contract KYEXSwapEVM is
     ///////////////////
     //TODO: Change it before deployment
     address private constant uniswapRouter =
-        0xE592427A0AEce92De3Edee1F18E0157C05861564;
+        0x1b81D678ffb9C0263b24A97847620C99d213eB14;
     address private constant gateWay =
         0x48B9AACC350b20147001f88821d31731Ba4C30ed;
     address private constant universalContract =
-        0x287E1882A69c709eD72674E445f9D7fdE6bdb0fF;
+        0x88C58f7eD3517d14977Bb841b9A100B1cd090C07;
     address private constant nativeToken =
-        0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270;
+        0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
 
     address public kyexTreasury;
     uint32 public maxDeadLine;
@@ -94,7 +94,7 @@ contract KYEXSwapEVM is
      * @notice To Iinitialize contract after deployed.
      */
     function initialize() external initializer {
-        __Ownable_init();
+        __Ownable_init(msg.sender);
         __Pausable_init();
         __ReentrancyGuard_init();
     }

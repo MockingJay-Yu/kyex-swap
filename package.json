@@ -30,15 +30,18 @@
     "typechain": "^8.3.0"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^4.9.0",
-    "@openzeppelin/contracts-upgradeable": "^4.9.0",
+    "@0xsquid/sdk": "^2.8.10",
+    "@0xsquid/squid-types": "^0.1.56",
+    "@openzeppelin/contracts": "^5.0.2",
+    "@openzeppelin/contracts-upgradeable": "^5.0.2",
     "@uniswap/v2-core": "uniswap/v2-core",
     "@uniswap/v2-periphery": "uniswap/v2-periphery",
     "@uniswap/v3-core": "^1.0.1",
     "@uniswap/v3-periphery": "^1.4.4",
     "@uniswap/v3-sdk": "^3.18.1",
-    "@zetachain/protocol-contracts": "^9.0.0",
-    "@zetachain/toolkit": "^12.0.0",
+    "@zetachain/protocol-contracts": "zeta-chain/protocol-contracts",
+    "@zetachain/toolkit": "zeta-chain/toolkit",
+    "axios": "^1.8.1",
     "ethers": "^6.13.4"
   }
 }

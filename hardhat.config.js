@@ -1,5 +1,6 @@
 require("@nomicfoundation/hardhat-toolbox");
-require("dotenv").config();
+require("@openzeppelin/hardhat-upgrades");
+require("./task/batchSwap");
 
 /** @type import('hardhat/config').HardhatUserConfig */
 
@@ -25,6 +26,19 @@ module.exports = {
   },
 
   networks: {
+    hardhat: {
+      chainId: 1337,
+      accounts: [
+        {
+          privateKey: deployer,
+          balance: "1000000000000000000000",
+        },
+        {
+          privateKey: user,
+          balance: "1000000000000000000000",
+        },
+      ],
+    },
     zeta_test: {
       url: "https://zetachain-athens.g.allthatnode.com/archive/evm/e6f4078993be427386b109445e004b31",
       accounts: [deployer],
@@ -54,7 +68,11 @@ module.exports = {
       accounts: [deployer],
     },
     polygon: {
-      url: "https://rpc.ankr.com/polygon",
+      url: "https://polygon-mainnet.g.allthatnode.com/full/evm/e6f4078993be427386b109445e004b31",
+      accounts: [deployer],
+    },
+    sol_test: {
+      url: "https://solana-mainnet.g.allthatnode.com/full/json_rpc/e6f4078993be427386b109445e004b31",
       accounts: [deployer],
     },
   },

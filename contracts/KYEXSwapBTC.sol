@@ -5,15 +5,15 @@ pragma solidity ^0.8.20;
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 import "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import "libraries/zetaV2/contracts/zevm/interfaces/IWZETA.sol";
 import "libraries/zetaV2/contracts/zevm/interfaces/IZRC20.sol";
-import "libraries/zetaV2/contracts/SystemContract.sol";
 import "libraries/TransferHelper.sol";
 import "libraries/error/Errors.sol";
 import "libraries/event/Events.sol";
 import "libraries/BytesLib.sol";
+import "libraries/zetaV2/contracts/zevm/interfaces/UniversalContract.sol";
 
 /*
 ██╗░░██╗██╗░░░██╗███████╗██╗░░██╗
@@ -45,7 +45,7 @@ import "libraries/BytesLib.sol";
  */
 
 contract KYEXSwapBTC is
-    zContract,
+    UniversalContract,
     UUPSUpgradeable,
     OwnableUpgradeable,
     PausableUpgradeable,
@@ -57,8 +57,8 @@ contract KYEXSwapBTC is
     //TODO: Change it before deployment
     address private constant uniswapRouter =
         0x2ca7d64A7EFE2D62A725E2B35Cf7230D6677FfEe;
-    address private constant systemContract =
-        0x91d18e54DAf4F677cB28167158d6dd21F6aB3921;
+    address private constant gateWay =
+        0xfEDD7A6e3Ef1cC470fbfbF955a22D793dDC0F44E;
     address private constant nativeToken =
         0x5F0b1a82749cb4E2278EC87F8BF6B618dC71a8bf;
     address private constant btcAddress =
@@ -73,8 +73,8 @@ contract KYEXSwapBTC is
     ///////////////////
     // Modifiers
     ///////////////////
-    modifier onlySystemContract() {
-        if (msg.sender != address(systemContract)) revert Errors.OnlyGateWay();
+    modifier onlyGateway() {
+        if (msg.sender != address(gateWay)) revert Errors.OnlyGateWay();
         _;
     }
 
@@ -86,7 +86,7 @@ contract KYEXSwapBTC is
      * @notice To Iinitialize contract after deployed.
      */
     function initialize() external initializer {
-        __Ownable_init();
+        __Ownable_init(msg.sender);
         __Pausable_init();
         __ReentrancyGuard_init();
     }
@@ -150,12 +150,12 @@ contract KYEXSwapBTC is
         emit Events.Withdrawn(owner(), zrc20Address, balance);
     }
 
-    function onCrossChainCall(
-        zContext calldata /*context*/,
+    function onCall(
+        MessageContext calldata /*context*/,
         address /*tokenInOfZetaChain*/,
         uint256 amountIn,
         bytes calldata message
-    ) external override onlySystemContract whenNotPaused {
+    ) external override onlyGateway whenNotPaused {
         address targetToken = bytesToAddress(message, 0);
         bytes memory recipient = abi.encodePacked(bytesToAddress(message, 20));
         swapExecute(amountIn, targetToken, recipient);

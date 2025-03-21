@@ -5,8 +5,8 @@ pragma solidity ^0.8.20;
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 import "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import "libraries/zetaV2/contracts/zevm/interfaces/IWZETA.sol";
 import "libraries/zetaV2/contracts/zevm/interfaces/IZRC20.sol";
 import "libraries/zetaV2/contracts/zevm/interfaces/UniversalContract.sol";
@@ -44,7 +44,7 @@ import "libraries/BytesLib.sol";
  * @author KYEX-TEAM
  * @dev KYEX Mainnet ZETACHAIN Smart Contract V1
  */
-contract KYEXSwapZeta is
+contract KYEXSwapZetaTest is
     UniversalContract,
     UUPSUpgradeable,
     OwnableUpgradeable,
@@ -59,8 +59,6 @@ contract KYEXSwapZeta is
         bytes sourceChainSwapPath;
         address[] zetaChainSwapPath;
         bytes targetChainSwapPath;
-        uint256 targetChainPoolNum;
-        address[] gasZRC20SwapPath;
         bytes recipient;
         bytes sender;
         bytes omnichainSwapContract;
@@ -70,13 +68,9 @@ contract KYEXSwapZeta is
     // State Variables
     ///////////////////
     //TODO: Change it before deployment
-    address private constant uniswapRouter =
-        0x2ca7d64A7EFE2D62A725E2B35Cf7230D6677FfEe;
-    address private constant gateWay =
-        0xfEDD7A6e3Ef1cC470fbfbF955a22D793dDC0F44E;
-    address private constant nativeToken =
-        0x5F0b1a82749cb4E2278EC87F8BF6B618dC71a8bf;
-
+    address public uniswapRouter;
+    address public gateWay;
+    address public nativeToken;
     address public kyexTreasury;
     uint32 public maxDeadLine;
     uint16 public crossChainPlatformFee;
@@ -87,7 +81,7 @@ contract KYEXSwapZeta is
     // Modifiers
     ///////////////////
     modifier onlyGateway() {
-        if (msg.sender != address(gateWay)) revert Errors.OnlyGateWay();
+        if (msg.sender != gateWay) revert Errors.OnlyGateWay();
         _;
     }
 
@@ -98,8 +92,15 @@ contract KYEXSwapZeta is
     /**
      * @notice To Iinitialize contract after deployed.
      */
-    function initialize() external initializer {
-        __Ownable_init();
+    function initialize(
+        address _uniswapRouter,
+        address _gateWay,
+        address _nativeToken
+    ) external initializer {
+        uniswapRouter = _uniswapRouter;
+        gateWay = _gateWay;
+        nativeToken = _nativeToken;
+        __Ownable_init(msg.sender);
         __Pausable_init();
         __ReentrancyGuard_init();
     }
@@ -167,7 +168,7 @@ contract KYEXSwapZeta is
         uint256 amountIn,
         address tokenIn,
         SwapDetail calldata swapDetail
-    ) external payable whenNotPaused nonReentrant {
+    ) external payable whenNotPaused {
         receiveToken(amountIn, tokenIn);
         swapExecute(tokenIn, amountIn, swapDetail);
     }
@@ -196,38 +197,33 @@ contract KYEXSwapZeta is
         SwapDetail memory swapDetail
     ) private {
         uint256 zetaPathLength = swapDetail.zetaChainSwapPath.length;
-        uint256 gasZRC20PathLength = swapDetail.gasZRC20SwapPath.length;
-        // uint256 targetChainPoolNum;
-        // address targetChainTokenIn;
-        // if (swapDetail.targetChainSwapPath.length > 0) {
-        //     (targetChainPoolNum, targetChainTokenIn, ) = decodeSwapPath(
-        //         swapDetail.targetChainSwapPath
-        //     );
-        // }
-        uint256 gasFee;
-        address gasToken;
-        if (gasZRC20PathLength > 0) {
-            if (swapDetail.targetChainPoolNum == 0) {
-                (gasToken, gasFee) = IZRC20(swapDetail.gasZRC20SwapPath[0])
-                    .withdrawGasFee();
-            } else {
-                (gasToken, gasFee) = IZRC20(swapDetail.gasZRC20SwapPath[0])
-                    .withdrawGasFeeWithGasLimit(
-                        150000 + swapDetail.targetChainPoolNum * 110000
-                    );
-            }
-        }
         address tokenOutOfZetaChain = swapDetail.zetaChainSwapPath[
             zetaPathLength - 1
         ];
+        uint256 targetChainPoolNum;
+        uint256 gasFee;
+        address gasToken;
+        if (swapDetail.targetChainSwapPath.length > 0) {
+            (targetChainPoolNum, , ) = decodeSwapPath(
+                swapDetail.targetChainSwapPath
+            );
+            targetChainPoolNum == 0
+                ? (gasToken, gasFee) = IZRC20(tokenOutOfZetaChain)
+                    .withdrawGasFee()
+                : (gasToken, gasFee) = IZRC20(tokenOutOfZetaChain)
+                .withdrawGasFeeWithGasLimit(
+                    150000 + targetChainPoolNum * 110000
+                );
+        }
+
         uint256 amountOut;
-        if (zetaPathLength == 3 && gasZRC20PathLength == 3) {
+        if (zetaPathLength == 3 && gasToken != tokenOutOfZetaChain) {
             address[] memory uniswapPath = new address[](2);
             uniswapPath[0] = swapDetail.zetaChainSwapPath[0];
             uniswapPath[1] = nativeToken;
             amountOut = uniswapExecute(uniswapPath, amountIn, 0, true);
             uniswapPath[0] = nativeToken;
-            uniswapPath[1] = swapDetail.gasZRC20SwapPath[2];
+            uniswapPath[1] = gasToken;
             uint256 amountOutOfGas = uniswapExecute(
                 uniswapPath,
                 amountOut,
@@ -243,7 +239,7 @@ contract KYEXSwapZeta is
             );
             TransferHelper.safeApprove(tokenOutOfZetaChain, gateWay, amountOut);
             TransferHelper.safeApprove(gasToken, gateWay, gasFee);
-        } else if (gasZRC20PathLength == 1) {
+        } else if (gasToken == tokenOutOfZetaChain) {
             amountOut = uniswapExecute(
                 swapDetail.zetaChainSwapPath,
                 amountIn,
@@ -265,7 +261,8 @@ contract KYEXSwapZeta is
             swapDetail,
             amountOut,
             tokenOutOfZetaChain,
-            tokenInOfZetaChain
+            tokenInOfZetaChain,
+            targetChainPoolNum
         );
 
         emit Events.SwapExecuted(
@@ -347,9 +344,10 @@ contract KYEXSwapZeta is
         SwapDetail memory swapDetail,
         uint256 amountOut,
         address tokenOutOfZetaChain,
-        address tokenInOfZetaChain
+        address tokenInOfZetaChain,
+        uint256 targetChainPoolNum
     ) private {
-        if (swapDetail.targetChainPoolNum > 0) {
+        if (targetChainPoolNum > 0) {
             IGatewayZEVM(gateWay).withdrawAndCall(
                 swapDetail.omnichainSwapContract,
                 amountOut,
@@ -361,14 +359,11 @@ contract KYEXSwapZeta is
                     amountOut,
                     swapDetail.minAmountOut
                 ),
-                CallOptions(
-                    150000 + swapDetail.targetChainPoolNum * 110000,
-                    false
-                ),
+                CallOptions(150000 + targetChainPoolNum * 110000, false),
                 RevertOptions(
                     address(this),
                     true,
-                    address(this),
+                    address(0),
                     abi.encode(swapDetail.sender, tokenInOfZetaChain),
                     0
                 )
@@ -384,13 +379,13 @@ contract KYEXSwapZeta is
                 RevertOptions(
                     address(this),
                     true,
-                    address(this),
+                    address(0),
                     abi.encode(swapDetail.recipient, tokenInOfZetaChain),
                     0
                 )
             );
         } else {
-            amountOut = sendPlatformFee(amountOut, tokenOutOfZetaChain, true);
+            amountOut = sendPlatformFee(amountOut, tokenOutOfZetaChain, false);
             if (amountOut < swapDetail.minAmountOut)
                 revert Errors.SlippageToleranceExceedsMaximum();
             if (tokenOutOfZetaChain == nativeToken) {

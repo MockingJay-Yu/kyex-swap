@@ -45,4 +45,9 @@ library Events {
         address receiver,
         uint256 amount
     );
+    event ReceivedToken(
+        address indexed sender,
+        address indexed token,
+        uint256 amountIn
+    );
 }

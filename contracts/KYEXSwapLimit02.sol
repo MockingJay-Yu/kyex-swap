@@ -11,9 +11,10 @@ import "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import "libraries/IWETH.sol";
 import "libraries/TransferHelper.sol";
+import "libraries/IWETH.sol";
 import "libraries/error/Errors.sol";
 
-contract KYEXSwapLimit is
+contract KYEXSwapLimit02 is
     UUPSUpgradeable,
     OwnableUpgradeable,
     PausableUpgradeable,
@@ -32,6 +33,7 @@ contract KYEXSwapLimit is
         address toToken;
         address recipient;
         uint256 amountOut;
+        uint256 amountOutMin;
         uint256 expiry;
         address sender;
     }
@@ -45,9 +47,13 @@ contract KYEXSwapLimit is
         uint256 toChainId;
         address toToken;
         address recipient;
-        address sender;
         uint16 executeCount;
         uint256 timeInterval;
+    }
+
+    struct cancelOrdersParam {
+        uint256 orderId;
+        uint256 cancelAmount;
     }
 
     /////////////////////
@@ -131,21 +137,11 @@ contract KYEXSwapLimit is
         return orderIds.values();
     }
 
-    function excuteOrder(
-        uint256 orderId,
-        address target,
-        uint256 gasLimit,
-        bytes calldata data
-    ) external onlyOwner {
-        TransferHelper.safeApprove(
-            orders[orderId].fromToken,
-            target,
-            orders[orderId].amountIn
-        );
-        (bool success, ) = target.call{gas: gasLimit}(data);
-        require(success, "Call failed");
-        orderIds.remove(orderId);
-        delete orders[orderId];
+    function excuteOrder(uint256[] calldata _orderIds) external onlyOwner {
+        for (uint256 i = 0; i < _orderIds.length; i++) {
+            delete orders[_orderIds[i]];
+        }
+        emit ExcuteOrder(_orderIds);
     }
 
     function cancelOrder(
@@ -180,6 +176,17 @@ contract KYEXSwapLimit is
         emit CancelOrder(_orderId);
     }
 
+    function cancelOrders(
+        cancelOrdersParam[] calldata _cancelOrders
+    ) external payable onlyOwner {
+        for (uint16 i = 0; i < _cancelOrders.length; i++) {
+            cancelOrder(
+                _cancelOrders[i].orderId,
+                _cancelOrders[i].cancelAmount
+            );
+        }
+    }
+
     /* @dev Receive the user's tokens and calculate volume*/
     function receiveToken(
         uint256 amountIn,
@@ -193,7 +200,7 @@ contract KYEXSwapLimit is
             TransferHelper.safeTransferFrom(
                 tokenIn,
                 msg.sender,
-                address(this),
+                owner(),
                 amountIn
             );
         } else {

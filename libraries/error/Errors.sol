@@ -16,7 +16,13 @@ library Errors {
     error PlatformFeeNeedslessThanOneHundredPercent();
     error IncorrectAmountSent();
     error ErrorTransferringZeta();
-    error ChainIdAlreadyEnabled();
-    error ChainIdNotAvailable();
+    error OnlyTreasury();
+    error ExceedCurrentTimestamp();
     error InvalidZetaValueAndGas();
+    error CancelAmountMoreThanAmountIn();
+    error ExpiryEarlier();
+    error CallSquidRouterFail();
+    error OnlySender();
+    error NotEnoughRemainingAmount();
+    error NotEnoughRemainingExecuteCount();
 }

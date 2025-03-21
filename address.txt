@@ -1,0 +1,83 @@
+bsc_test
+    address private constant uniswapRouter =
+        0x1b81D678ffb9C0263b24A97847620C99d213eB14;
+    address private constant gateWay =
+        0x0c487a766110c85d301D96E33579C5B317Fa4995;
+    address private constant universalContract =
+        0x5b1017857D2972F9C960fA88C6CabeB1127FE7a1;
+    address private constant nativeToken =
+        0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd;
+
+bsc
+    address private constant uniswapRouter =
+        0x1b81D678ffb9C0263b24A97847620C99d213eB14;
+    address private constant gateWay =
+        0x48B9AACC350b20147001f88821d31731Ba4C30ed;
+    address private constant universalContract =
+        0xF847690e6309Ecd2f4DCC3E817073251f00687d2;
+    address private constant nativeToken =
+        0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
+
+zeta_test
+    address private constant uniswapRouter =
+        0x2ca7d64A7EFE2D62A725E2B35Cf7230D6677FfEe;
+    address private constant gateWay =
+        0x6c533f7fE93fAE114d0954697069Df33C9B74fD7;
+    address private constant nativeToken =
+        0x5F0b1a82749cb4E2278EC87F8BF6B618dC71a8bf;
+
+zeta
+    address private constant uniswapRouter =
+        0x2ca7d64A7EFE2D62A725E2B35Cf7230D6677FfEe;
+    address private constant gateWay =
+        0xfEDD7A6e3Ef1cC470fbfbF955a22D793dDC0F44E;
+    address private constant nativeToken =
+        0x5F0b1a82749cb4E2278EC87F8BF6B618dC71a8bf;
+
+sepolia
+    address private constant uniswapRouter =
+        0x3bFA4769FB09eefC5a80d6E87c3B9C650f7Ae48E;
+    address private constant gateWay =
+        0x0c487a766110c85d301D96E33579C5B317Fa4995;
+    address private constant universalContract =
+        0x5b1017857D2972F9C960fA88C6CabeB1127FE7a1;
+    address private constant nativeToken =
+        0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9;
+
+base
+    address private constant uniswapRouter =
+        0x2626664c2603336E57B271c5C0b26F421741e481;
+    address private constant gateWay =
+        0x48B9AACC350b20147001f88821d31731Ba4C30ed;
+    address private constant universalContract =
+        0x918D7dCa9e86a842CA63F7A53fC656115AD5BDC8;
+    address private constant nativeToken =
+        0x4200000000000000000000000000000000000006;
+
+eth
+    address private constant uniswapRouter =
+        0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45;
+    address private constant gateWay =
+        0x48B9AACC350b20147001f88821d31731Ba4C30ed;
+    address private constant universalContract =
+        0x5e90665bBE4fbe07fcf2fA201d45B2Fc850Df7A4;
+    address private constant nativeToken =
+        0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+pol
+    address private constant uniswapRouter =
+        0xE592427A0AEce92De3Edee1F18E0157C05861564;
+    address private constant gateWay =
+        0x48B9AACC350b20147001f88821d31731Ba4C30ed;
+    address private constant universalContract =
+        0x5e90665bBE4fbe07fcf2fA201d45B2Fc850Df7A4;
+    address private constant nativeToken =
+        0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270;
+
+
+
+zeta:0xF847690e6309Ecd2f4DCC3E817073251f00687d2
+pol:0x77cf9E70776f23decd4a59F6737627dE7B5A8c90
+bsc:0x1855B09D6ED88be6aa11CB0892629cb2bd1a18bc
+
+bsc_test :0xB75039C46e65A1a9781902285272E677bF02993a
+sepolia :0xA840C92f1843F7689077Fd144950dEc30EC03061
