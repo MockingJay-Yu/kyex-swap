@@ -10,7 +10,6 @@ import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "libraries/TransferHelper.sol";
 import "libraries/error/Errors.sol";
-import "libraries/event/Events.sol";
 
 abstract contract KYEXBaseOrder is
     UUPSUpgradeable,
@@ -26,15 +25,14 @@ abstract contract KYEXBaseOrder is
     uint256 public currentOrderId;
     EnumerableSet.UintSet internal orderIds;
     uint256 public platformFee;
+    address public treasury;
 
-    /**
-     * @notice To Iinitialize contract after deployed.
-     */
-    function initialize(uint256 _platformFee) external initializer {
-        __Ownable_init(msg.sender);
-        __Pausable_init();
-        __ReentrancyGuard_init();
-        platformFee = _platformFee;
+    /////////////////////
+    /// Modifiers
+    ////////////////////
+    modifier existsOrder(uint256 orderId) {
+        if (!orderIds.contains(orderId)) revert Errors.OrderNotExist();
+        _;
     }
 
     /////////////////////
@@ -48,12 +46,17 @@ abstract contract KYEXBaseOrder is
         uint256 nativeTokenVolume
     );
     event CancelOrder(uint256 indexed orderId, address indexed sender);
-    event DeleteOrder(uint256 indexed orderId, address indexed sender);
     event ReceivedToken(
         address indexed sender,
         address indexed token,
         uint256 amountIn,
         uint256 gasFee
+    );
+    event ReceivePlatformFee(
+        address indexed token,
+        address indexed sender,
+        address receiver,
+        uint256 amount
     );
 
     ///////////////////
@@ -76,6 +79,23 @@ abstract contract KYEXBaseOrder is
     ///////////////////
     // External Function
     ///////////////////
+
+    /**
+     * @notice To Iinitialize contract after deployed.
+     */
+    function initialize(
+        uint256 _platformFee,
+        address _treasury
+    ) external initializer {
+        if (_platformFee >= 10000) revert Errors.InvalidPlatformFee();
+
+        __Ownable_init(msg.sender);
+        __Pausable_init();
+        __ReentrancyGuard_init();
+        platformFee = _platformFee;
+        treasury = _treasury;
+    }
+
     function getAllTokenId() external view returns (uint256[] memory) {
         return orderIds.values();
     }
@@ -102,46 +122,28 @@ abstract contract KYEXBaseOrder is
         platformFee = newPlatformFee;
     }
 
+    function updateTreasury(address newTreasury) external onlyOwner {
+        treasury = newTreasury;
+    }
+
     ///////////////////
     // Internal Function
     ///////////////////
-    function receiveToken(
-        uint256 amountIn,
-        uint256 gasFee,
-        address tokenIn
-    ) internal {
-        if (amountIn == 0) revert Errors.NeedsMoreThanZero();
-        if (tokenIn != address(0)) {
-            if (gasFee > msg.value) revert Errors.InsufficientFunds();
-            if (IERC20(tokenIn).allowance(msg.sender, address(this)) < amountIn)
-                revert Errors.InsufficientAllowance();
-            TransferHelper.safeTransferFrom(
-                tokenIn,
-                msg.sender,
-                address(this),
-                amountIn
-            );
-        } else {
-            if (amountIn + gasFee > msg.value)
-                revert Errors.InsufficientFunds();
-        }
-        emit ReceivedToken(msg.sender, tokenIn, amountIn, gasFee);
-    }
-
     function deductPlatformFee(
         uint256 amoutIn,
         address tokenIn,
         address sender
     ) internal returns (uint256) {
         uint256 feeAmount = (amoutIn * platformFee) / 10000;
-        if (tokenIn != address(0)) {
-            TransferHelper.safeTransfer(tokenIn, owner(), feeAmount);
-        }
-        emit Events.ReceivePlatformFee(tokenIn, sender, owner(), feeAmount);
+
+        tokenIn == address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
+            ? TransferHelper.transferNativeToken(treasury, feeAmount)
+            : TransferHelper.safeTransfer(tokenIn, treasury, feeAmount);
+        emit ReceivePlatformFee(tokenIn, sender, treasury, feeAmount);
         return amoutIn - feeAmount;
     }
 
-    function _authorizeUpgrade(address) internal virtual override {}
+    function _authorizeUpgrade(address) internal virtual override onlyOwner {}
 
     ///////////////////
     // receive

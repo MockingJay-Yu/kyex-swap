@@ -14,9 +14,9 @@ contract KYEXDCAOrder is KYEXBaseOrder {
         uint256 amountOutMin;
         uint256 amountOutMax;
         uint256 toChainId;
-        address toToken;
+        bytes toToken;
         address sender;
-        address recipient;
+        bytes recipient;
         uint16 executeCount;
         uint256 timeInterval;
         uint256 remainingExecuteCount;
@@ -31,8 +31,8 @@ contract KYEXDCAOrder is KYEXBaseOrder {
         uint256 amountOutMin;
         uint256 amountOutMax;
         uint256 toChainId;
-        address toToken;
-        address recipient;
+        bytes toToken;
+        bytes recipient;
         uint16 executeCount;
         uint256 timeInterval;
         uint256 gasFee;
@@ -50,28 +50,36 @@ contract KYEXDCAOrder is KYEXBaseOrder {
 
     function openOrder(
         OpenOrderParams calldata params
-    ) external payable whenNotPaused returns (uint256 orderId) {
+    ) external payable whenNotPaused {
+        if (
+            params.fromToken == address(0) ||
+            params.fromChainId == 0 ||
+            params.amountIn == 0 ||
+            params.toChainId == 0 ||
+            params.toToken.length == 0 ||
+            params.recipient.length == 0 ||
+            params.executeCount == 0 ||
+            params.timeInterval == 0
+        ) revert Errors.InvalidParameter();
         receivedToken(
             params.amountIn,
             params.gasFee,
             params.fromToken,
             params.executeCount
         );
-
-        orderId = currentOrderId;
-        addOrder(params, orderId);
-        emit OpenOrder(orderId, msg.sender);
+        addOrder(params, currentOrderId);
+        emit OpenOrder(currentOrderId, msg.sender);
         currentOrderId++;
     }
 
-    function excuteOrder(
+    function executeOrder(
         uint256 orderId,
         uint256 excuteAmount,
         address target,
         uint256 gasLimit,
         uint256 nativeTokenVolume,
         bytes calldata data
-    ) external onlyOwner {
+    ) external onlyOwner whenNotPaused existsOrder(orderId) {
         DCAOrder storage order = orders[orderId];
 
         if (order.remainingAmount < excuteAmount)
@@ -86,17 +94,22 @@ contract KYEXDCAOrder is KYEXBaseOrder {
         );
         if (sendAmount == 0) revert Errors.NeedsMoreThanZero();
         bool success;
-        if (order.fromToken == address(0)) {
-            (success, ) = target.call{gas: gasLimit, value: sendAmount}(data);
+        if (
+            order.fromToken ==
+            address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
+        ) {
+            (success, ) = target.call{
+                gas: gasLimit,
+                value: sendAmount + order.gasFee
+            }(data);
         } else {
             TransferHelper.safeApprove(order.fromToken, target, sendAmount);
-            (success, ) = target.call{gas: gasLimit}(data);
+            (success, ) = target.call{gas: gasLimit, value: order.gasFee}(data);
         }
         if (!success) revert Errors.CallSquidRouterFail();
         if (order.remainingAmount - excuteAmount == 0) {
             orderIds.remove(orderId);
             delete orders[orderId];
-            emit DeleteOrder(orderId, msg.sender);
         } else {
             order.remainingExecuteCount -= 1;
             order.remainingAmount -= excuteAmount;
@@ -109,22 +122,31 @@ contract KYEXDCAOrder is KYEXBaseOrder {
         );
     }
 
-    function cancelOrder(uint256 orderId) external {
-        address sender = orders[orderId].sender;
-        if (msg.sender != owner() && sender != msg.sender)
-            revert Errors.OnlySender();
-        address fromToken = orders[orderId].fromToken;
-        if (fromToken == address(0)) {
+    function cancelOrder(
+        uint256 orderId
+    ) external whenNotPaused existsOrder(orderId) {
+        DCAOrder storage order = orders[orderId];
+        if (msg.sender != owner() && order.sender != msg.sender)
+            revert Errors.OnlySenderOrOwner();
+        if (
+            order.fromToken ==
+            address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
+        ) {
             TransferHelper.transferNativeToken(
-                sender,
-                orders[orderId].remainingAmount
+                order.sender,
+                order.remainingAmount +
+                    order.gasFee *
+                    order.remainingExecuteCount
             );
         } else {
-            TransferHelper.safeTransferFrom(
-                fromToken,
-                address(this),
-                sender,
+            TransferHelper.safeTransfer(
+                order.fromToken,
+                order.sender,
                 orders[orderId].remainingAmount
+            );
+            TransferHelper.transferNativeToken(
+                order.sender,
+                order.gasFee * order.remainingExecuteCount
             );
         }
 
@@ -162,8 +184,7 @@ contract KYEXDCAOrder is KYEXBaseOrder {
         address tokenIn,
         uint256 executeCount
     ) private {
-        if (amountIn == 0) revert Errors.NeedsMoreThanZero();
-        if (tokenIn != address(0)) {
+        if (tokenIn != address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)) {
             if (gasFee * executeCount > msg.value)
                 revert Errors.InsufficientFunds();
 
@@ -179,6 +200,6 @@ contract KYEXDCAOrder is KYEXBaseOrder {
             if (amountIn + gasFee * executeCount > msg.value)
                 revert Errors.InsufficientFunds();
         }
-        emit Events.ReceivedToken(msg.sender, tokenIn, amountIn, gasFee);
+        emit ReceivedToken(msg.sender, tokenIn, amountIn, gasFee);
     }
 }

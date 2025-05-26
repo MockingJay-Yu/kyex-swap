@@ -22,7 +22,11 @@ library Errors {
     error CancelAmountMoreThanAmountIn();
     error ExpiryEarlier();
     error CallSquidRouterFail();
-    error OnlySender();
+    error OnlySenderOrOwner();
     error NotEnoughRemainingAmount();
     error NotEnoughRemainingExecuteCount();
+    error GasFeeMismatch();
+    error OrderNotExist();
+    error InvalidPlatformFee();
+    error InvalidParameter();
 }

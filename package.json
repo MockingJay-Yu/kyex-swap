@@ -42,6 +42,7 @@
     "@zetachain/protocol-contracts": "zeta-chain/protocol-contracts",
     "@zetachain/toolkit": "zeta-chain/toolkit",
     "axios": "^1.8.1",
+    "dotenv": "^16.4.7",
     "ethers": "^6.13.4"
   }
 }

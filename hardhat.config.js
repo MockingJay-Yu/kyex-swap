@@ -1,3 +1,4 @@
+require("dotenv").config();
 require("@nomicfoundation/hardhat-toolbox");
 require("@openzeppelin/hardhat-upgrades");
 require("./task/batchSwap");
@@ -27,58 +28,85 @@ module.exports = {
 
   networks: {
     hardhat: {
-      chainId: 1337,
-      accounts: [
-        {
-          privateKey: deployer,
-          balance: "1000000000000000000000",
-        },
-        {
-          privateKey: user,
-          balance: "1000000000000000000000",
-        },
-      ],
-    },
-    zeta_test: {
-      url: "https://zetachain-athens.g.allthatnode.com/archive/evm/e6f4078993be427386b109445e004b31",
-      accounts: [deployer],
+      chainId: 31337,
     },
     sepolia: {
-      url: "https://ethereum-sepolia.g.allthatnode.com/full/evm/e6f4078993be427386b109445e004b31",
-      accounts: [deployer],
+      url: process.env.RPC_SEPOLIA,
+      accounts: [process.env.PRIVATE_KEY_TESTNET],
     },
     zeta: {
-      url: "https://zetachain-mainnet.g.allthatnode.com/full/evm/e6f4078993be427386b109445e004b31",
-      accounts: [deployer],
+      url: process.env.RPC_ZETA_MAINNET,
+      accounts: [process.env.PRIVATE_KEY_MAINNET],
     },
-    bsc: {
-      url: "https://bsc-mainnet.g.allthatnode.com/full/evm/e6f4078993be427386b109445e004b31",
-      accounts: [deployer],
+    bnb: {
+      url: process.env.RPC_BNB_MAINNET,
+      accounts: [process.env.PRIVATE_KEY_MAINNET],
     },
-    bsc_test: {
-      url: "https://bsc-testnet.g.allthatnode.com/full/evm/e6f4078993be427386b109445e004b31",
-      accounts: [deployer],
+    bnb_test: {
+      url: process.env.RPC_BNB_MAINNET,
+      accounts: [process.env.PRIVATE_KEY_TESTNET],
     },
     base: {
-      url: "https://base-mainnet.g.allthatnode.com/full/evm/e6f4078993be427386b109445e004b31",
-      accounts: [deployer],
+      url: process.env.RPC_BASE_MAINNET,
+      accounts: [process.env.PRIVATE_KEY_MAINNET],
     },
     eth: {
-      url: "https://eth-mainnet.nodereal.io/v1/1659dfb40aa24bbb8153a677b98064d7",
-      accounts: [deployer],
+      url: process.env.RPC_ETH_MAINNET,
+      accounts: [process.env.PRIVATE_KEY_MAINNET],
     },
     polygon: {
-      url: "https://polygon-mainnet.g.allthatnode.com/full/evm/e6f4078993be427386b109445e004b31",
-      accounts: [deployer],
+      url: process.env.RPC_POLYGON_MAINNET,
+      accounts: [process.env.PRIVATE_KEY_MAINNET],
     },
-    sol_test: {
-      url: "https://solana-mainnet.g.allthatnode.com/full/json_rpc/e6f4078993be427386b109445e004b31",
-      accounts: [deployer],
+    arb: {
+      url: process.env.RPC_ARB_MAINNET,
+      accounts: [process.env.PRIVATE_KEY_MAINNET],
+    },
+    avax: {
+      url: process.env.RPC_AVAX_MAINNET,
+      accounts: [process.env.PRIVATE_KEY_MAINNET],
+    },
+    optimism: {
+      url: process.env.RPC_OPTIMISM_MAINNET,
+      accounts: [process.env.PRIVATE_KEY_MAINNET],
+    },
+    blast: {
+      url: process.env.RPC_BLAST_MAINNET,
+      accounts: [process.env.PRIVATE_KEY_MAINNET],
+    },
+    filecoin: {
+      url: process.env.RPC_FILECOIN_MAINNET,
+      accounts: [process.env.PRIVATE_KEY_MAINNET],
+    },
+    scroll: {
+      url: process.env.RPC_SCROLL_MAINNET,
+      accounts: [process.env.PRIVATE_KEY_MAINNET],
+    },
+    fantom: {
+      url: process.env.RPC_FANTOM_MAINNET,
+      accounts: [process.env.PRIVATE_KEY_MAINNET],
+    },
+    celo: {
+      url: process.env.RPC_CELO_MAINNET,
+      accounts: [process.env.PRIVATE_KEY_MAINNET],
+    },
+    imx: {
+      url: process.env.RPC_IMX_MAINNET,
+      accounts: [process.env.PRIVATE_KEY_MAINNET],
+    },
+    linea: {
+      url: process.env.RPC_LINEA_MAINNET,
+      accounts: [process.env.PRIVATE_KEY_MAINNET],
+    },
+    mantle: {
+      url: process.env.RPC_MANTLE_MAINNET,
+      accounts: [process.env.PRIVATE_KEY_MAINNET],
     },
   },
   etherscan: {
     apiKey: {
-      bsc: "BG8P7926NRRPDQ8ZZ47RNTGZRMHZ76TW3A", // 将你的 API 密钥放在这里
+      bnb: process.env.SCAN_APIKEY_BNB,
+      base: process.env.SCAN_APIKEY_BASE,
     },
   },
 };
